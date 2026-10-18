@@ -1,0 +1,29 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+lerna-debug.log*
+
+# Dependency directories
+node_modules/
+
+# Build output
+dist
+.output
+.vite/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Editor / OS files
+.DS_Store
+.vscode
+.idea
+
+# Database
+*.sqlite*
+server/*.sqlite*
+

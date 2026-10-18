@@ -1,0 +1,28 @@
+{
+  "name": "agribazzer-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AGRIBAZZER — From Crop to Customer, One AI Platform. Mobile-first agriculture ecosystem app.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jpeg-js": "^0.4.4",
+    "jsonwebtoken": "^9.0.3",
+    "pngjs": "^7.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "^1.63.0",
+    "vite": "^5.4.11"
+  }
+}
