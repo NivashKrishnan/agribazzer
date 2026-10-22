@@ -7,15 +7,26 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "start": "node server/app.js",
+    "server": "node server/app.js",
+    "test": "node server/audit_test.js",
+    "migrate": "node server/migrate.js",
+    "cap:sync": "cap sync android",
+    "cap:build": "vite build && cap sync android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
+    "dotenv": "^16.4.7",
     "express": "^5.2.1",
     "jpeg-js": "^0.4.4",
     "jsonwebtoken": "^9.0.3",
+    "pg": "^8.13.3",
     "pngjs": "^7.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

@@ -1,9 +1,10 @@
 /* Screens 14 Sell Produce, 15 My Listings, 18 Buyer Matching, 20 Waste-to-Value */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Btn, Chip, Icon, MobileHeader, SectionTitle, Field, BuyerCard, AIInsightCard, useApp, severityTone,
 } from '../components.jsx';
 import { BUYERS, LISTINGS, WASTE_MATCHES, WASTE_TYPES } from '../data.js';
+import api from '../services/api.js';
 
 /* ---------- 14 Sell Produce ---------- */
 export function SellForm({ params }) {
@@ -145,7 +146,27 @@ export function SellForm({ params }) {
 export function Listings() {
   const app = useApp();
   const [tab, setTab] = useState('Active');
-  const list = LISTINGS.filter((l) => (tab === 'Active' ? l.status === 'Active' : tab === 'Sold' ? l.status === 'Sold' : l.status === 'Rejected'));
+  const [dbLots, setDbLots] = useState([]);
+
+  useEffect(() => {
+    api.getLots({ isWaste: 'false' }).then((res) => {
+      if (res.lots && res.lots.length > 0) {
+        setDbLots(res.lots.map((l) => ({
+          id: l.id,
+          crop: l.crop,
+          variety: l.variety || 'Standard',
+          qty: `${l.quantity} ${l.unit || 'kg'}`,
+          price: l.expected_price,
+          status: l.status === 'PUBLISHED' ? 'Active' : (l.status === 'SOLD' ? 'Sold' : 'Active'),
+          matches: 4,
+          img: l.image || 'img/paddy.jpg',
+        })));
+      }
+    }).catch((e) => console.log('Lots API notice:', e.message));
+  }, []);
+
+  const combinedListings = dbLots.length > 0 ? dbLots : LISTINGS;
+  const list = combinedListings.filter((l) => (tab === 'Active' ? l.status === 'Active' : tab === 'Sold' ? l.status === 'Sold' : l.status === 'Rejected'));
   return (
     <div className="screen" style={{ paddingBottom: 150 }}>
       <MobileHeader title="My Listings" sub="Your produce marketplace listings" back={false}

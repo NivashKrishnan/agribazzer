@@ -26,4 +26,17 @@ dist
 # Database
 *.sqlite*
 server/*.sqlite*
+server/*.backup*
+
+# Android / Mobile
+android/.gradle/
+android/app/build/
+android/build/
+*.apk
+*.aab
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
 

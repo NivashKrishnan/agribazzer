@@ -6,12 +6,36 @@ import {
 } from '../components.jsx';
 import { AGRIBOT_KB, AGRIBOT_SUGGESTIONS, LOGISTICS, NOTIFICATIONS, ORDERS, PAYMENT, USER } from '../data.js';
 import { LANGUAGES, t, speakText } from '../i18n.js';
+import { api } from '../services/api.js';
 
 /* ---------- 25 Orders ---------- */
 export function Orders() {
   const app = useApp();
   const [tab, setTab] = useState('Selling');
-  const list = ORDERS[tab.toLowerCase()] || [];
+  const [orders, setOrders] = useState(ORDERS);
+
+  useEffect(() => {
+    api.getOrders().then((data) => {
+      if (data && data.length) {
+        const formatted = data.map((o) => ({
+          id: o.id.length > 8 ? o.id.slice(0, 8) : o.id,
+          item: o.crop_type || 'Paddy (Samba)',
+          qty: `${o.quantity || 500} kg`,
+          price: `₹${(o.total_amount || 13500).toLocaleString('en-IN')}`,
+          status: o.status || 'Confirmed',
+          party: o.buyer_name || 'Verified Buyer',
+          date: new Date(o.created_at || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+          type: 'selling',
+        }));
+        setOrders((prev) => ({
+          ...prev,
+          selling: [...formatted, ...(prev.selling || []).filter((s) => !formatted.some((f) => f.id === s.id))],
+        }));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const list = orders[tab.toLowerCase()] || [];
   return (
     <div className="screen" style={{ padding: 0, paddingBottom: 150 }}>
       <MobileHeader title="My Orders" sub="Buying · Selling · Procurement" />
@@ -93,6 +117,22 @@ export function Payment() {
 export function Notifications() {
   const app = useApp();
   const [list, setList] = useState(NOTIFICATIONS);
+
+  useEffect(() => {
+    api.getNotifications().then((res) => {
+      if (res && res.length) {
+        const mapped = res.map((n) => ({
+          id: n.id,
+          title: n.title,
+          body: n.body,
+          time: new Date(n.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          unread: !n.is_read,
+        }));
+        setList([...mapped, ...NOTIFICATIONS.filter((x) => !mapped.some((m) => m.id === x.id))]);
+      }
+    }).catch(() => {});
+  }, []);
+
   const unread = list.filter((n) => n.unread).length;
   return (
     <div className="screen" style={{ padding: 0, paddingBottom: 150 }}>
@@ -153,9 +193,20 @@ export function Agribot() {
     setInput('');
     setMsgs((m) => [...m, { who: 'user', text: q }]);
     setTyping(true);
-    await new Promise((r) => setTimeout(r, 650));
+
+    let reply = '';
+    try {
+      const res = await api.agribot({ query: q, language: lang });
+      if (res && res.reply) {
+        reply = res.reply;
+      } else {
+        reply = botReply(q, lang);
+      }
+    } catch {
+      reply = botReply(q, lang);
+    }
+
     setTyping(false);
-    const reply = botReply(q, lang);
     setMsgs((m) => [...m, { who: 'bot', text: reply }]);
     if (audioEnabled) {
       speakText(reply, lang);

@@ -147,7 +147,7 @@ export function Otp({ params }) {
     if (joined !== '123456') { setErr('Incorrect OTP. Demo OTP is 123456.'); throw new Error('cancel'); }
     await new Promise((r) => setTimeout(r, 600));
     app.toast('Mobile number verified ✓');
-    if (params?.mode === 'signup') app.go('role'); else app.go('role');
+    if (params?.mode === 'signup') app.go('role', params); else app.go('role', params);
   };
   return (
     <div className="screen no-nav" style={{ padding: 0 }}>
@@ -189,7 +189,7 @@ export function Signup() {
     setErrs(e);
     if (Object.keys(e).length) throw new Error('cancel');
     await new Promise((r) => setTimeout(r, 600));
-    app.go('otp', { mode: 'signup', phone: f.phone });
+    app.go('otp', { mode: 'signup', phone: f.phone, name: f.name, location: f.loc });
   };
   return (
     <div className="screen no-nav" style={{ padding: 0 }}>
@@ -219,9 +219,32 @@ export function Signup() {
 }
 
 /* ---------- 04 Role selection ---------- */
-export function RoleSelect() {
+export function RoleSelect({ params }) {
   const app = useApp();
   const [role, setRole] = useState('farmer');
+
+  const handleContinue = async () => {
+    app.setRole(role);
+    if (params?.mode === 'signup' && params?.phone) {
+      try {
+        const res = await api.register({
+          name: params.name || 'Agri User',
+          phone: params.phone,
+          location: params.location || 'Thanjavur, Tamil Nadu',
+          role: role,
+          password: 'password123',
+        });
+        if (res.token) {
+          localStorage.setItem('agribazzer_token', res.token);
+          if (res.user && app.updateProfile) app.updateProfile(res.user);
+        }
+      } catch (err) {
+        console.log('Register API notice:', err.message);
+      }
+    }
+    app.go('permissions');
+  };
+
   return (
     <div className="screen no-nav" style={{ padding: 0 }}>
       <MobileHeader title="Who are you?" sub="Choose your role to continue" back={false} />
@@ -242,7 +265,7 @@ export function RoleSelect() {
             </div>
           </button>
         ))}
-        <Btn block onClick={() => { app.setRole(role); app.go('permissions'); }}>Continue</Btn>
+        <Btn block onClick={handleContinue}>Continue</Btn>
       </div>
     </div>
   );
