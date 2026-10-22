@@ -122,10 +122,10 @@ async function runAudit() {
     const createLotData = await createLotRes.json();
     lotId = createLotData.lot.id;
 
-    const dbLot = db.prepare('SELECT * FROM produce_lots WHERE id = ?').get(lotId);
+    const dbLot = await db.get('SELECT * FROM produce_lots WHERE id = ?', [lotId]);
     if (!dbLot || dbLot.farmer_id !== farmerUser.id) throw new Error('Lot ownership or database persistence failed');
 
-    logPass('3. SELL PRODUCE', `Produce Lot (${lotId}) published by Farmer (${farmerUser.id}) and verified in SQLite`);
+    logPass('3. SELL PRODUCE', `Produce Lot (${lotId}) published by Farmer (${farmerUser.id}) and verified in ${db.getDatabaseType()}`);
   } catch (e) {
     logFail('3. SELL PRODUCE', e.message);
   }
@@ -153,10 +153,10 @@ async function runAudit() {
     const addDemData = await addDemRes.json();
     demandId = addDemData.demand.id;
 
-    const dbDem = db.prepare('SELECT * FROM buyer_demands WHERE id = ?').get(demandId);
+    const dbDem = await db.get('SELECT * FROM buyer_demands WHERE id = ?', [demandId]);
     if (!dbDem || dbDem.buyer_id !== buyerUser.id) throw new Error('Demand persistence failed');
 
-    logPass('4. BUYER DEMAND', `Buyer (${buyerUser.id}) registered & Demand (${demandId}) persisted in SQLite`);
+    logPass('4. BUYER DEMAND', `Buyer (${buyerUser.id}) registered & Demand (${demandId}) persisted in ${db.getDatabaseType()}`);
   } catch (e) {
     logFail('4. BUYER DEMAND', e.message);
   }
@@ -207,7 +207,7 @@ async function runAudit() {
     const acceptData = await acceptRes.json();
     orderId = acceptData.order.id;
 
-    const dbOrder = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
+    const dbOrder = await db.get('SELECT * FROM orders WHERE id = ?', [orderId]);
     if (!dbOrder || dbOrder.total_amount !== 2000 * 29.5) throw new Error('Order verification failed');
 
     logPass('6-8. OFFER, NEGOTIATION & ORDER', `Offer (${offerId}) countered & accepted. Order (${orderId}) created for Total ₹${dbOrder.total_amount}`);
@@ -326,7 +326,7 @@ async function runAudit() {
       body: JSON.stringify({ crop: 'Paddy' }),
     });
     const scanData = await scanRes.json();
-    if (!scanData.scan.disease_or_pest || !['Demo AI Analysis', 'Gemini AI Analysis'].includes(scanData.label)) throw new Error('Scan result error');
+    if (!scanData.scan?.disease_or_pest || !['Demo AI Analysis', 'Gemini AI Analysis', 'Gemini Vision AI'].includes(scanData.label || scanData.scan?.analysis_type)) throw new Error('Scan result error');
 
     logPass('15. PLANT SCANNER', `Diagnosis: "${scanData.scan.disease_or_pest}". Confidence: ${scanData.scan.confidence * 100}%. Label: "${scanData.label}"`);
   } catch (e) {
@@ -398,11 +398,11 @@ async function runAudit() {
 
     const tableCounts = {};
     for (const t of tables) {
-      const count = db.prepare(`SELECT COUNT(*) as c FROM ${t}`).get().c;
-      tableCounts[t] = count;
+      const row = await db.get(`SELECT COUNT(*) as c FROM ${t}`);
+      tableCounts[t] = Number(row?.c || 0);
     }
 
-    logPass('22. DATABASE AUDIT', `All 17 tables verified intact in SQLite. Record counts: ${JSON.stringify(tableCounts)}`);
+    logPass('22. DATABASE AUDIT', `All 17 tables verified intact in ${db.getDatabaseType()}. Record counts: ${JSON.stringify(tableCounts)}`);
   } catch (e) {
     logFail('22. DATABASE AUDIT', e.message);
   }

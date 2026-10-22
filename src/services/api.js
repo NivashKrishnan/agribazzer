@@ -1,6 +1,8 @@
 /* ============================================================
    AGRIBAZZER — Full-Stack API Integration Service
    Provides seamless HTTP API communication with backend server.
+   Supports Vite environment configuration (VITE_API_BASE_URL),
+   Vercel, Render production deployment, and Capacitor Android APK.
    ============================================================ */
 
 function getAuthHeader() {
@@ -18,13 +20,25 @@ async function request(endpoint, options = {}) {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
   const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
 
-  const candidates = [
-    `/api${endpoint}`,
-    `${protocol}//${hostname}:5000/api${endpoint}`,
-    `http://localhost:5000/api${endpoint}`
-  ];
+  // Environment-based API base URL (Vercel & Render production config)
+  const envBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL)
+    ? String(import.meta.env.VITE_API_BASE_URL).replace(/\/$/, '')
+    : '';
 
-  // Remove duplicates
+  const candidates = [];
+
+  if (envBase) {
+    candidates.push(`${envBase}/api${endpoint}`);
+    candidates.push(`${envBase}${endpoint}`);
+  }
+
+  // Standard relative and local host candidates
+  candidates.push(`/api${endpoint}`);
+  candidates.push(`${protocol}//${hostname}:5000/api${endpoint}`);
+  candidates.push(`http://localhost:5000/api${endpoint}`);
+  candidates.push(`http://127.0.0.1:5000/api${endpoint}`);
+
+  // Deduplicate candidates preserving priority order
   const uniqueUrls = Array.from(new Set(candidates));
   let lastErr = null;
 
@@ -38,7 +52,7 @@ async function request(endpoint, options = {}) {
       return data;
     } catch (err) {
       lastErr = err;
-      // If server returned HTTP 4xx or 5xx with specific error message, don't try other hosts
+      // If server returned specific 4xx or 5xx with application error message, avoid retrying other hosts
       if (err.message.startsWith('HTTP 4') || err.message.startsWith('HTTP 5') || err.message.includes('Unauthorized') || err.message.includes('already exists')) {
         throw err;
       }
@@ -50,6 +64,9 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
+  // Health & Server Status
+  getHealth: () => request('/health'),
+
   // Auth APIs
   register: (userData) => request('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
   login: (credentials) => request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
@@ -87,7 +104,9 @@ export const api = {
 
   // Logistics & Payments
   getLogistics: (orderId) => request(`/logistics${orderId ? `?orderId=${orderId}` : ''}`),
+  updateLogistics: (id, data) => request(`/logistics/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   getPayment: (orderId) => request(`/payment${orderId ? `?orderId=${orderId}` : ''}`),
+  completePayment: (id) => request(`/payments/${id}/pay`, { method: 'POST' }),
 
   // Procurement
   getProcurementCentres: () => request('/procurement/centres'),
@@ -96,12 +115,14 @@ export const api = {
 
   // Notifications & Grievances
   getNotifications: () => request('/notifications'),
+  getGrievances: () => request('/grievances'),
   submitGrievance: (grievanceData) => request('/grievances', { method: 'POST', body: JSON.stringify(grievanceData) }),
 
-  // Market Prices, Weather, Plant Scan
+  // Market Prices, Weather, Plant Scan, AgriBot
   getMarketPrices: () => request('/market-prices'),
   getWeather: (params) => request('/weather' + (params ? (typeof params === 'string' ? '?' + params : '?' + new URLSearchParams(params).toString()) : '')),
   analyzePlantScan: (scanData) => request('/plant-scans', { method: 'POST', body: JSON.stringify(scanData) }),
+  agribot: (payload) => request('/agribot', { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 export default api;

@@ -1,82 +1,193 @@
-# AGRIBAZZER — Mobile Application
+# AGRIBAZZER — Full-Stack Agriculture Marketplace & AI Platform
 
-**From Crop to Customer — One AI Platform**
+**From Crop to Customer — One Unified Agricultural Platform**  
 *Grow Smart. Monitor Smart. Sell Smart.*
 
-A complete mobile-first redesign of the AGRIBAZZER web platform as a true
-Android/iOS-style application (React + Vite, 390×844 design frame). It is not a
-responsive website — every screen is rebuilt around touch interaction, bottom
-navigation, bottom sheets, swipeable cards and a floating AI assistant, while
-preserving the AGRIBAZZER green agricultural identity from the reference design.
+AGRIBAZZER is a full-stack, AI-powered agricultural marketplace and farm intelligence platform. It bridges farmers, verified buyers, procurement centres, and agricultural logistics through a mobile-first interface, resilient Express backend, dual-mode PostgreSQL/SQLite database architecture, and a cross-platform Android application powered by Capacitor.
 
-## Run it
+---
 
+## System Architecture
+
+```mermaid
+graph TD
+    ClientWeb["Vercel Frontend (https://agribazzer.vercel.app)"] -->|HTTPS / REST API| Backend["Render Backend (Node.js / Express)"]
+    ClientApp["Android APK (Capacitor Mobile App)"] -->|HTTPS / REST API| Backend
+    Backend -->|Connection Pool / SSL| DB[("Production PostgreSQL (Neon / Render)")]
+    Backend -.->|Local Dev Fallback| SQLite[("Local SQLite Database")]
+    Backend -->|Vision & Diagnostics| GeminiAI["Google Gemini AI API"]
+    Backend -->|Agri Weather Alerts| WeatherAPI["WeatherAPI & Open-Meteo"]
+    Backend -->|Mandi Rates| GovData["Agmarknet & data.gov.in"]
+```
+
+---
+
+## Key Features & Connected Modules
+
+1. **Farmer & Buyer Portals**: Role-based access, JWT session management, farm and crop profiles.
+2. **Produce Marketplace**: Real-time listings, multi-filter search, seller verification, and direct buyer matching.
+3. **Price Assistant & Mandi Rates**: Live market prices across crops and districts with AI price predictions.
+4. **Crop Health & Disease Scanner**: Multimodal crop disease scanner with domain-backed diagnostic fallbacks and Gemini Vision integration.
+5. **Smart Procurement & Digital Tokens**: Government procurement center slot booking, digital tokens, and queue tracking.
+6. **Logistics & Orders**: Order lifecycle tracking, transport selection, and verifiable UPI/COD transactions.
+7. **AgriBot**: Multilingual conversational AI assistant supporting English, Tamil, and Tanglish.
+8. **Automated CI/CD**: GitHub Actions workflow running frontend builds and 17-point backend/database test suites.
+
+---
+
+## Project Structure
+
+```
+agribazzer/
+├── .github/workflows/ci.yml       # Automated CI test and build workflow
+├── android/                       # Capacitor native Android project
+├── capacitor.config.json          # Android app configuration
+├── render.yaml                    # Render Blueprint infrastructure-as-code
+├── vercel.json                    # Vercel deployment & SPA routing rules
+├── package.json                   # Root dependencies & scripts
+├── public/                        # Static images & branding assets
+├── server/
+│   ├── app.js                     # Express API server with JWT & CORS
+│   ├── audit_test.js              # 17-point automated full-stack test suite
+│   ├── db.js                      # Dual-mode PostgreSQL / SQLite database adapter
+│   ├── migrate.js                 # PostgreSQL schema applicator & SQLite migration tool
+│   ├── schema.sql                 # 17 agricultural database tables & 16 indexes
+│   └── seed.js                    # Database seed scripts
+├── src/
+│   ├── App.jsx                    # Root client router & state provider
+│   ├── app.css                    # Design system (390x844 mobile frame, tokens, motion)
+│   ├── components.jsx             # UI component library
+│   ├── data.js                    # Agricultural reference data
+│   ├── i18n.js                    # Multilingual translation dictionary & TTS
+│   ├── screens/                   # 33 application screens
+│   │   ├── Account.jsx            # Orders, Payment, Notifications, AgriBot, Profile
+│   │   ├── Auth.jsx               # Login, Signup, Role Selection, Permissions
+│   │   ├── Farm.jsx               # Farm management, Scanner, Diagnosis
+│   │   ├── Home.jsx               # Farmer & Buyer dashboards, Weather alerts
+│   │   ├── Market.jsx             # Marketplace, Price Assistant, Checkout
+│   │   ├── Procurement.jsx        # Token generation, Queue status, Logistics
+│   │   └── Sell.jsx               # Produce listing, Buyer matching, Waste-to-value
+│   └── services/
+│       └── api.js                 # Frontend API client with JWT storage
+```
+
+---
+
+## Database Architecture (17 Tables)
+
+The production database is fully specified in [`server/schema.sql`](server/schema.sql) and runs on PostgreSQL (with local SQLite fallback in [`server/db.js`](server/db.js)):
+
+| Table | Description |
+|---|---|
+| `users` | Multi-role user accounts (Farmer, Buyer, Agent, Admin) with password hashing |
+| `farms` | Farm land parcels, soil types, irrigation sources, GPS coordinates |
+| `crops` | Active plantings, acreage, sowing dates, expected harvest dates |
+| `produce_lots` | Produce listed for sale (quantity, price, grade, storage location) |
+| `buyer_demands` | Purchase requirements posted by commercial buyers |
+| `offers` | Price offers and bids between buyers and farmers |
+| `negotiations` | Counter-offers and conversation threads |
+| `orders` | Confirmed trade contracts and fulfillment states |
+| `logistics` | Vehicle bookings, driver details, tracking states |
+| `payments` | UPI/Escrow payment records and status tracking |
+| `procurement_centres`| MSP procurement hubs with daily capacity metrics |
+| `procurement_tokens` | Time slots and queue positions for MSP crop delivery |
+| `notifications` | Weather alerts, price changes, and system alerts |
+| `grievances` | Farmer support requests and dispute resolutions |
+| `plant_scans` | Crop leaf photos, AI diagnosis, treatment advice |
+| `market_prices` | Daily mandi modal, minimum, and maximum prices |
+| `weather_data` | Weather observations, precipitation, humidity, advisory |
+
+---
+
+## Local Development Setup
+
+### 1. Prerequisites
+- **Node.js**: v18+ (v20+ recommended)
+- **Java**: JDK 17 or JDK 21 (for Android builds)
+
+### 2. Installation
 ```bash
+git clone https://github.com/NivashKrishnan/agribazzer.git
+cd agribazzer
 npm install
-npm run dev        # http://localhost:5173
-npm run build      # production build
-node scripts/qa.cjs  # headless visual QA walk-through (screenshots → qa/)
 ```
 
-Demo login: any 10-digit mobile (e.g. `9876543210`) · OTP `123456`.
-
-## The 6 core capabilities surfaced immediately
-
-1. 🛰 **Monitor crops with AI** — camera scanner, diagnosis, action plans, history
-2. 📈 **Understand market prices** — live mandi rates, trends, AI price range
-3. 🛒 **Sell your own produce** — 2-minute listing form → AI buyer matching
-4. 🤝 **Find the right buyer** — match scores, verified buyers, negotiation
-5. 🎟 **Manage procurement & logistics** — digital token, AI queue prediction, tracking
-6. ♻️ **Turn agricultural waste into value** — waste listing → AI use/buyer matching
-
-## Screens (33)
-
-Splash · Onboarding (5 swipeable) · Login · OTP · Sign-up · Role Selection ·
-Permissions · Home Dashboard (Farmer **and** Buyer variants) · My Farm ·
-Crop Details · AI Disease Scanner · AI Diagnosis · Crop Health History ·
-Weather & Risk · Market Prices · AI Price Assistant · Buyer Marketplace ·
-Product Details · Negotiation · Sell Produce · My Listings · AI Buyer Matching ·
-Waste-to-Value · Smart Procurement · Procurement Token · AI Queue Prediction ·
-Logistics Tracking · Orders · Payment · Notifications · Agribot (EN/தமிழ்/Thanglish) ·
-Profile · Settings
-
-## Reusable components (`src/components.jsx`)
-
-`MobileHeader`, `BottomNavigation`, `CropCard`, `MarketPriceCard`,
-`ProductCard`, `BuyerCard`, `DiseaseResultCard`, `WeatherCard`,
-`ProcurementTokenCard`, `QueueCard`, `OrderCard`, `NotificationCard`,
-`AgribotButton`, `AIInsightCard`, plus `Btn` (idle/loading/success/error/disabled
-states), `Sheet`, `ConfirmModal`, `Chip`, `Field`, `Spark`, `Icon` (offline SVG set).
-
-## Architecture
-
-```
-src/
-  App.jsx            stack router, role switch, toasts, confirmations
-  app.css            design system (tokens, cards, sheets, nav, motion)
-  data.js            demo data layer (mirrors platform API shapes)
-  components.jsx     reusable mobile component library
-  screens/
-    Auth.jsx         01 splash → permissions
-    Home.jsx         dashboard + weather/risk
-    Farm.jsx         farm, crop, scanner, diagnosis, history
-    Market.jsx       prices, AI price assistant, marketplace, product, negotiation
-    Sell.jsx         sell form, listings, buyer matching, waste-to-value
-    Procurement.jsx  procurement, token, queue AI, logistics
-    Account.jsx      orders, payment, notifications, agribot, profile, settings
-public/img/          photographic assets
-scripts/qa.cjs       headless walk-through capturing qa/*.png
+### 3. Start Backend & Database
+```bash
+# Starts Express on http://localhost:5000 (uses local SQLite or PostgreSQL if DATABASE_URL is set)
+node server/app.js
 ```
 
-## UX rules honoured
+### 4. Start Frontend
+```bash
+# Starts Vite on http://localhost:5173
+npm run dev
+```
 
-- Mobile-first 390×844 frame; no desktop tables — cards, sheets, tabs, timelines
-- Bottom nav: Home · Farm · Market · Sell/Buy · Profile + central **AI Scan FAB** + floating **Agribot**
-- Progressive disclosure; every key action ≤ 2 taps
-- Confirmation dialogs before: posting produce, cancelling token, confirming
-  purchase, accepting negotiation, completing payment
-- Form validation with inline errors; button loading/success/error states
-- Red/orange reserved for disease severity, alerts and warnings only
-- Responsible AI: chemical control shown with label-following use, safety
-  warning, expert confirmation and a 3–5 day follow-up advisory
-- Role switch (Farmer ↔ Buyer) without disconnecting the account
+### 5. Run Full-Stack Audit Test Suite
+```bash
+# Executes all 17 integration tests against the database & API endpoints
+node server/audit_test.js
+```
+
+---
+
+## Production Deployment
+
+### 1. Database Setup (Neon or Render Postgres)
+1. Create a PostgreSQL database on [Neon](https://neon.tech) or [Render](https://render.com).
+2. Obtain the connection string (e.g. `postgres://user:pass@ep-xyz.neon.tech/agribazzer?sslmode=require`).
+3. Run the schema migration script:
+   ```bash
+   DATABASE_URL="your-postgres-connection-string" node server/migrate.js
+   ```
+
+### 2. Backend Deployment (Render)
+1. In Render, create a **Web Service** pointing to this repository.
+2. Select Root Directory as `.` (or use the included `render.yaml` Blueprint).
+3. Set Build Command: `npm install`
+4. Set Start Command: `node server/app.js`
+5. Configure Environment Variables:
+   - `NODE_ENV`: `production`
+   - `PORT`: `10000`
+   - `DATABASE_URL`: Your PostgreSQL connection string
+   - `SESSION_SECRET`: Secure 32+ character random secret
+   - `CORS_ORIGIN`: `https://agribazzer.vercel.app,capacitor://localhost`
+   - `GEMINI_API_KEY`: (Optional) Your Google Gemini API Key
+
+### 3. Frontend Deployment (Vercel)
+1. Connect the repository to [Vercel](https://vercel.com).
+2. Framework Preset: **Vite**
+3. Build Command: `npm run build`
+4. Output Directory: `dist`
+5. Environment Variables:
+   - `VITE_API_BASE_URL`: `https://your-render-backend.onrender.com`
+6. `vercel.json` will automatically handle SPA rewrites and client asset caching.
+
+---
+
+## Android Mobile Application (Capacitor)
+
+The Android project is pre-configured with camera, geolocation, audio, and network permissions.
+
+### Build and Run:
+```bash
+# 1. Build the production web bundle
+npm run build
+
+# 2. Sync web assets with native Android project
+npx cap sync android
+
+# 3. Open in Android Studio or compile debug APK
+# Ensure JDK 17 or JDK 21 is set as your JAVA_HOME
+cd android
+./gradlew assembleDebug
+```
+The output APK is generated at:
+`android/app/build/outputs/apk/debug/app-debug.apk`
+
+---
+
+## License & Attribution
+
+AGRIBAZZER is built for agricultural empowerment, fair prices, and direct farm-to-buyer market transparency.
